@@ -10,10 +10,14 @@ class DiaryCreate(BaseModel):
     content: str
     weather: str
     mood_score: int
+    category: str
 
 class DiaryResponse(BaseModel):
     id: int
     content: str
+    category: str
+    title: Optional[str] = None
+    mood_score: int
     ai_comment: Optional[str] = None
     created_at: datetime
 

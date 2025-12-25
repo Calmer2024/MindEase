@@ -2,7 +2,7 @@
 import http from '@ohos.net.http';
 import { Diary } from '../model/DiaryModel';
 
-const BASE_URL = 'http://10.138.164.39:8000';
+const BASE_URL = 'http://10.138.156.106:8000';
 
 export interface StatsData {
   dates: string[];
@@ -58,7 +58,7 @@ class ApiService {
   }
 
   // --- 3. 写日记 (已升级：使用动态 ID) ---
-  async createDiary(content: string, moodScore: number): Promise<Diary | null> {
+  async createDiary(content: string, moodScore: number,category: string): Promise<Diary | null> {
     if (this.currentUserId === 0) return null; // 未登录拦截
 
     const httpRequest = http.createHttp();
@@ -66,7 +66,8 @@ class ApiService {
       user_id: this.currentUserId, // ✨ 这里不再是 1 了，而是动态的！
       content: content,
       weather: "Sunny",
-      mood_score: moodScore
+      mood_score: moodScore,
+      category: category
     };
 
     try {

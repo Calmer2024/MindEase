@@ -17,6 +17,8 @@ class DiaryDB(Base):
     content = Column(Text)
     weather = Column(String(20))
     mood_score = Column(Integer)
+    category = Column(String(50), default="生活")
+    title = Column(String(50), nullable=True)
     ai_comment = Column(Text, nullable=True)
     ai_mood = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.now)

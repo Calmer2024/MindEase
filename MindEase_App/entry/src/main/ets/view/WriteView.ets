@@ -1,232 +1,295 @@
 import { apiService } from '../services/ApiService';
-import { Diary } from '../model/DiaryModel';
 import promptAction from '@ohos.promptAction';
 
 // --- 1. 定义心情数据常量 ---
 interface MoodOption {
-  icon: string;
+  icon: Resource;
   score: number;
   label: string;
-  color: string; // 选中时的背景色
+  color: string;
 }
 
 const MOOD_OPTIONS: MoodOption[] = [
-  { icon: '😫', score: 1, label: '糟糕', color: '#FFEBEE' }, // 红
-  { icon: '😔', score: 2, label: '低落', color: '#F3E5F5' }, // 紫
-  { icon: '😐', score: 3, label: '平静', color: '#E3F2FD' }, // 蓝
-  { icon: '🙂', score: 4, label: '开心', color: '#E8F5E9' }, // 绿
-  { icon: '🤩', score: 5, label: '极好', color: '#FFFDE7' }, // 黄
+  { icon: $r('app.media.mood_1'), score: 1, label: '糟糕', color: '#FFEBEE' },
+  { icon: $r('app.media.mood_2'), score: 2, label: '低落', color: '#F3E5F5' },
+  { icon: $r('app.media.mood_3'), score: 3, label: '平静', color: '#E3F2FD' },
+  { icon: $r('app.media.mood_4'), score: 4, label: '开心', color: '#E8F5E9' },
+  { icon: $r('app.media.mood_5'), score: 5, label: '极好', color: '#FFFDE7' },
 ];
 
-// --- 2. 获取当前格式化时间的工具函数 ---
-function getFormattedDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const date = now.getDate();
-  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  const day = weekDays[now.getDay()];
-  return `${year}年${month}月${date}日 ${day}`;
-}
+const CATEGORIES = ['生活', '工作', '学习', '情感', '灵感'];
 
+function getFormattedDate(): string[] {
+  const now = new Date();
+  // ✨ 修改点 2：星期改为中文 ✨
+  const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  const monthStr = (now.getMonth() + 1).toString().padStart(2, '0');
+  const dateStr = now.getDate().toString().padStart(2, '0');
+  const dayStr = weekDays[now.getDay()];
+  return [`${monthStr}.${dateStr}`, dayStr];
+}
 
 @Component
 export struct WriteView {
   @State inputText: string = '';
   @State aiResult: string = '';
+  @State aiTitle: string = '';
   @State isLoading: boolean = false;
-  // 当前选中的心情索引 (默认选中中间的“平静”)
   @State selectedMoodIndex: number = 2;
-  // 页面加载时的时间
-  @State todayDateStr: string = getFormattedDate();
+  @State selectedCategory: string = '生活';
+  @State dateInfo: string[] = getFormattedDate();
 
   build() {
-    // 使用 Stack做背景层叠
     Stack({ alignContent: Alignment.Top }) {
-      // 背景色
+      // 1. 全局背景
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#F7F8FA') // 高级灰背景
+        .backgroundColor('#F9F9F7')
 
-      // 主体内容区域 (可滚动，防止内容过多顶出去)
       Scroll() {
         Column() {
-          // --- 顶部 Header 区域 (时间和心情) ---
-          Row() {
-            // 左侧：自动时间戳
-            Column() {
-              Text(this.todayDateStr.split(' ')[0]) // 日期
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#333')
-              Text(this.todayDateStr.split(' ')[1]) // 星期
-                .fontSize(14)
-                .fontColor('#999')
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Start)
-
-            // 右侧：心情选择器 (替代原来的滑块)
-            Row({ space: 8 }) {
-              ForEach(MOOD_OPTIONS, (item: MoodOption, index: number) => {
-                // 心情图标按钮
-                Column() {
-                  Text(item.icon).fontSize(24)
-                }
-                .width(44)
-                .height(44)
-                .justifyContent(FlexAlign.Center)
-                .borderRadius(22) // 圆形
-                // 选中状态样式切换
-                .backgroundColor(this.selectedMoodIndex === index ? item.color : '#FFFFFF')
-                .border({
-                  width: this.selectedMoodIndex === index ? 2 : 0,
-                  color: '#007DFF'
-                })
-                .shadow(this.selectedMoodIndex === index ? { radius: 8, color: 'rgba(0,125,255,0.2)' } : { radius: 0 })
-                .animation({ duration: 200 }) // 添加点击动画
-                .onClick(() => {
-                  this.selectedMoodIndex = index;
-                })
-              })
-            }
-            .backgroundColor('#FFFFFF')
-            .padding(6)
-            .borderRadius(30)
-            .shadow({ radius: 10, color: 'rgba(0,0,0,0.05)' })
-
-          }
-          .width('90%')
-          .justifyContent(FlexAlign.SpaceBetween)
-          .margin({ top: 20, bottom: 20 })
-
-          // --- 核心编辑卡片 ---
+          // ==============================
+          // 1. 顶部日期大标题
+          // ==============================
           Column() {
-            // 模拟标题栏 (虽然不存数据库，但在UI上显示)
-            Text('今日随笔')
+            Text(this.dateInfo[0])
+              .fontSize(40)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#2C2C2C')
+              .fontFamily('HarmonyOS Sans SC')
+
+            Text(this.dateInfo[1])
               .fontSize(16)
-              .fontWeight(FontWeight.Medium)
-              .fontColor('#999')
-              .width('100%')
-              .padding({ left: 15, top: 15 })
-
-            Divider().color('#F0F0F0').margin({ top: 10, bottom: 5 })
-
-            // 优化后的文本输入区域
-            TextArea({ placeholder: '在这里记录此刻的想法，支持分段排版...' })
-              .height(250) // 更高的高度
-              .width('100%')
-              .backgroundColor(Color.Transparent) // 透明背景，融入卡片
-              .fontSize(17) // 更大的字号，便于阅读
-              .fontColor('#333')
-              .padding(15)
-              // 移除默认的输入框边框线，看起来更像一张纸
-              .borderWidth(0)
-              .onChange((value: string) => {
-                this.inputText = value;
-              })
+              .fontColor('#888')
+              .margin({ top: 4 ,left:2})
+              .letterSpacing(1)
           }
-          .width('90%')
-          .backgroundColor('#FFFFFF')
-          .borderRadius(16)
-          // 添加柔和的阴影，营造悬浮感
-          .shadow({ radius: 15, color: 'rgba(0,0,0,0.08)', offsetY: 5 })
-          .margin({ bottom: 30 })
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
+          .margin({ top: 20, bottom: 10 })
+          .padding({ left: 24 })
 
+          // ==============================
+          // 2. 心情选择区
+          // ==============================
+          Column() {
+            Row() {
+              ForEach(MOOD_OPTIONS, (item: MoodOption, index: number) => {
+                Column() {
+                  // 图标容器
+                  Column() {
+                    Image(item.icon)
+                      .width(28).height(28)
+                      .opacity(this.selectedMoodIndex === index ? 1 : 0.4)
+                  }
+                  .width(52)
+                  .height(52)
+                  .justifyContent(FlexAlign.Center)
+                  .backgroundColor(this.selectedMoodIndex === index ? item.color : '#FFFFFF')
+                  .borderRadius(26)
+                  .shadow(this.selectedMoodIndex === index ? { radius: 10, color: item.color, offsetY: 4 } : { radius: 0 })
+                  .animation({ duration: 300, curve: Curve.EaseOut })
 
-          // --- 提交按钮 ---
-          Button(this.isLoading ? '✨ AI 正在用心思考...' : '生成 AI 治愈回信')
-            .width('90%')
-            .height(56) // 更高大上的按钮高度
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .backgroundColor(this.isLoading ? '#E0E0E0' : '#007DFF')
-            .enabled(!this.isLoading)
-            // 渐变色阴影
-            .shadow({ radius: 10, color: this.isLoading ? 'transparent' : 'rgba(0,125,255,0.4)', offsetY: 4 })
-            .onClick(async () => {
-              await this.submitDiary();
-            })
-            .animation({ duration: 200 }) // 按钮状态切换动画
+                  Text(item.label)
+                    .fontSize(12)
+                    .fontColor(this.selectedMoodIndex === index ? '#333' : '#CCC')
+                    .margin({ top: 8 })
+                }
+                .onClick(() => {
+                  animateTo({ duration: 300 }, () => {
+                    this.selectedMoodIndex = index;
+                  })
+                })
+              })
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.SpaceEvenly)
+            .padding({ left: 10, right: 10 })
+          }
+          .margin({ bottom: 20 })
 
-          // --- AI 结果展示卡片 (优化版) ---
-          if (this.aiResult) {
+          // ==============================
+          // 3. “写信”区域
+          // ==============================
+          Column() {
+            // 3.1 分类标签
+            Row() {
+              List({ space: 10 }) {
+                ForEach(CATEGORIES, (tag: string) => {
+                  ListItem() {
+                    Text(tag)
+                      .fontSize(13)
+                      .fontColor(this.selectedCategory === tag ? '#FFF' : '#666')
+                      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+                      .backgroundColor(this.selectedCategory === tag ? '#2C3E50' : '#EFEFEF')
+                      .borderRadius(16)
+                      .onClick(() => this.selectedCategory = tag)
+                      .animation({ duration: 200 })
+                  }
+                })
+              }
+              .listDirection(Axis.Horizontal)
+              .scrollBar(BarState.Off)
+              .width('100%')
+              .height(40)
+            }
+            .padding({ left: 24, right: 24 })
+            .margin({ bottom: 12 })
+
+            // 3.2 输入框主体
             Column() {
-              Row() {
-                Image($r('app.media.app_icon')) // 这里可以用你自己的AI图标，没有就用文字
-                  .width(24).height(24).margin({right: 8})
-                Text('AI 心理咨询师的回信')
-                  .fontWeight(FontWeight.Bold)
-                  .fontSize(16)
-                  .fontColor('#007DFF')
+              Column() {
+                Text('Today is not bad')
+                  .fontSize(14)
+                  .fontColor('#B0B0B0')
+                  .fontFamily('serif')
+                  .margin({ bottom: 8 })
+
+                Divider()
+                  .color('#F0F0F0')
+                  .strokeWidth(1)
+                  .margin({ bottom: 15 })
               }
               .width('100%')
-              .margin({ bottom: 15 })
-              .alignItems(VerticalAlign.Center)
+              .alignItems(HorizontalAlign.Start)
 
-              // 使用 Text组件显示回复，设置行高和字间距提升阅读体验
+              // 真正的输入框
+              TextArea({ placeholder: '你或许想说点什么...' })
+                .height(220)
+                .width('100%')
+                .backgroundColor(Color.Transparent)
+                .fontSize(17)
+                .fontFamily('serif')
+                .fontColor('#2C2C2C')
+                .lineHeight(30)
+                .padding(0)
+                .borderWidth(0)
+                .onChange((value: string) => this.inputText = value)
+            }
+            .padding(24)
+            .backgroundColor('#FFFFFF')
+            .borderRadius(12)
+            .margin({ left: 20, right: 20, bottom: 30 })
+            .shadow({ radius: 10, color: 'rgba(0,0,0,0.03)', offsetY: 2 })
+          }
+
+          // ==============================
+          // 4. "记录此刻" 按钮
+          // ==============================
+          Button() {
+            Row() {
+              if (this.isLoading) {
+                LoadingProgress()
+                  .color('#FFFFFF')
+                  .width(20).height(20)
+                  .margin({ right: 10 })
+                Text('正在存入森林...')
+                  .fontSize(16).fontColor('#FFF').fontWeight(FontWeight.Medium)
+              } else {
+                Image($r('app.media.save'))
+                  .width(20).height(20).margin({ right: 8 })
+                  .fillColor('#FFF')
+                Text('记录此刻')
+                  .fontSize(16).fontColor('#FFF').fontWeight(FontWeight.Medium)
+              }
+            }
+          }
+          .width('90%')
+          .height(56)
+          .backgroundColor(this.isLoading ? '#5DADE2' : '#007DFF')
+          .shadow(this.isLoading ? { radius: 0 } : { radius: 15, color: 'rgba(0,125,255,0.25)', offsetY: 5 })
+          .onClick(async () => {
+            await this.submitDiary();
+          })
+          .enabled(!this.isLoading)
+          .animation({ duration: 300 })
+          .margin({ bottom: 40 })
+
+          // ==============================
+          // 5. AI 回信
+          // ==============================
+          if (this.aiResult) {
+            Column() {
+              // 装饰线条
+              Row()
+                .width(40)
+                .height(2)
+                .backgroundColor('#DDD')
+                .margin({ bottom: 20 })
+
+              // 标题
+              if (this.aiTitle) {
+                Text(this.aiTitle)
+                  .fontSize(20)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#1A1A1A')
+                  .fontFamily('serif')
+                  .margin({ bottom: 16 })
+                  .textAlign(TextAlign.Center)
+              }
+
+              // 正文
               Text(this.aiResult)
                 .fontSize(16)
-                .lineHeight(28) // 更宽松的行高
-                .letterSpacing(0.5)
                 .fontColor('#444')
+                .lineHeight(32)
+                .letterSpacing(1)
+                .fontFamily('serif')
+                .textAlign(TextAlign.JUSTIFY)
+                .width('100%')
+
+              // 落款装饰
+              Row() {
+                Text('—— 来自森林的回响')
+                  .fontSize(12)
+                  .fontColor('#999')
+                  .margin({ top: 20 })
+              }
+              .width('100%')
+              .justifyContent(FlexAlign.End)
             }
             .width('90%')
-            // 使用渐变背景色
-            .linearGradient({
-              angle: 180,
-              colors: [['#F0F8FF', 0.0], ['#E6F2FF', 1.0]]
-            })
-            .borderRadius(16)
-            .padding(20)
-            .margin({ top: 30, bottom: 50 }) // 底部留白
-            .shadow({ radius: 10, color: 'rgba(0,125,255,0.15)', offsetY: 5 })
-            // 结果出现时的动画
+            .padding({ top: 30, bottom: 30, left: 24, right: 24 })
+            .backgroundColor('#FFFCF0')
+            // ✨ 修改点 4：修复奇怪的蓝色阴影，改为淡灰色 ✨
+            .shadow({ radius: 20, color: 'rgba(0,0,0,0.05)', offsetY: 5 })
+            .borderRadius(2)
+            .margin({ bottom: 60 })
             .transition({ type: TransitionType.Insert, opacity: 0, translate: { y: 30 } })
           }
 
         }
-        .width('100%')
       }
-      .scrollBar(BarState.Off) // 隐藏滚动条
-      .align(Alignment.Top)
+      .scrollBar(BarState.Off)
       .height('100%')
     }
-    .width('100%')
-    .height('100%')
   }
 
   async submitDiary() {
     if (this.inputText.trim() === '') {
-      promptAction.showToast({ message: '写点什么吧，空的日记无法分析哦~' });
+      promptAction.showToast({ message: '写下几个字吧，森林在听...' });
       return;
     }
     this.isLoading = true;
     this.aiResult = '';
-    try {
-      // 获取当前选中的心情分数
-      const currentScore = MOOD_OPTIONS[this.selectedMoodIndex].score;
+    this.aiTitle = '';
 
-      const result = await apiService.createDiary(this.inputText, currentScore);
+    try {
+      const currentScore = MOOD_OPTIONS[this.selectedMoodIndex].score;
+      const result = await apiService.createDiary(this.inputText, currentScore, this.selectedCategory);
 
       if (result && result.ai_comment) {
-        // 使用动画让结果平滑显示
-        animateTo({ duration: 600, curve: Curve.FastOutSlowIn }, () => {
+        animateTo({ duration: 800, curve: Curve.EaseOut }, () => {
           this.aiResult = result.ai_comment || '';
+          this.aiTitle = result.title || '';
         })
-        promptAction.showToast({ message: '分析成功！' });
-        // 可选：发送成功后清空输入框
-        // this.inputText = '';
-      } else {
-        promptAction.showToast({ message: '请求成功，但 AI 未回复' });
+        promptAction.showToast({ message: '已永久保存' });
       }
     } catch (err) {
-      promptAction.showToast({ message: '网络错误，请检查连接' });
+      promptAction.showToast({ message: '连接中断' });
     } finally {
-      animateTo({ duration: 300 }, () => {
-        this.isLoading = false;
-      })
+      this.isLoading = false;
     }
   }
 }

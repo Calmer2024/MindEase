@@ -5,7 +5,6 @@ from typing import List
 from database import engine, get_db
 import models
 import schemas
-# 👇 引入两个 AI 服务函数
 from ai_service import analyze_diary_content, generate_weekly_summary
 
 # 自动建表
@@ -64,8 +63,10 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db)):
         content=diary.content,
         weather=diary.weather,
         mood_score=diary.mood_score,
+        category=diary.category,
         ai_comment=ai_result.get("comment"),
-        ai_mood=ai_result.get("mood")
+        ai_mood=ai_result.get("mood"),
+        title = ai_result.get("title", "无题")
     )
     db.add(db_diary)
     db.commit()

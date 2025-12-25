@@ -2,6 +2,9 @@
 export interface Diary {
   id: number;
   content: string;
+  category: string;    // 分类标签
+  title?: string;
+  mood_score: number;
   ai_comment?: string; // 可能为空
   created_at: string;
 }
@@ -12,4 +15,5 @@ export interface DiaryPost {
   content: string;
   weather: string;
   mood_score: number;
+  category: string;
 }
