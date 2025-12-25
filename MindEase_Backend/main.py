@@ -100,7 +100,7 @@ def soft_delete_diary(diary_id: int, db: Session = Depends(get_db)):
 # --- 获取回收站列表  ---
 @app.get("/diaries/trash/{user_id}", response_model=List[schemas.DiaryResponse])
 def get_trash_diaries(user_id: int, db: Session = Depends(get_db)):
-    # 🔥 1. 自动清理：检查有没有超过7天的，直接物理删除
+    # 1. 自动清理：检查有没有超过7天的，直接物理删除
     seven_days_ago = datetime.now() - timedelta(days=7)
 
     # 查出过期的
@@ -116,7 +116,7 @@ def get_trash_diaries(user_id: int, db: Session = Depends(get_db)):
     if expired:
         db.commit()
 
-    # 🔥 2. 返回剩下的回收站内容
+    # 2. 返回剩下的回收站内容
     trash_list = db.query(models.DiaryDB) \
         .filter(models.DiaryDB.user_id == user_id, models.DiaryDB.is_deleted == True) \
         .order_by(models.DiaryDB.deleted_at.desc()).all()

@@ -21,7 +21,6 @@ const CATEGORIES = ['生活', '工作', '学习', '情感', '灵感'];
 
 function getFormattedDate(): string[] {
   const now = new Date();
-  // ✨ 修改点 2：星期改为中文 ✨
   const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
   const monthStr = (now.getMonth() + 1).toString().padStart(2, '0');
   const dateStr = now.getDate().toString().padStart(2, '0');
@@ -252,7 +251,6 @@ export struct WriteView {
             .width('90%')
             .padding({ top: 30, bottom: 30, left: 24, right: 24 })
             .backgroundColor('#FFFCF0')
-            // ✨ 修改点 4：修复奇怪的蓝色阴影，改为淡灰色 ✨
             .shadow({ radius: 20, color: 'rgba(0,0,0,0.05)', offsetY: 5 })
             .borderRadius(2)
             .margin({ bottom: 60 })

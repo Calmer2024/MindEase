@@ -101,8 +101,6 @@ class ApiService {
     return null;
   }
 
-  // --- 👇👇👇 新增的回收站相关接口 👇👇👇 ---
-
   // 6. 软删除 (移入回收站)
   async deleteDiary(diaryId: number): Promise<boolean> {
     const httpRequest = http.createHttp();

@@ -34,7 +34,7 @@ struct RecycleBinPage {
       // 1. 标题栏
       Row() {
         // 返回按钮
-        Image($r('app.media.ic_back')) // ⚠️ 请确保有这个图标，或者用 Text('<')
+        Image($r('app.media.ic_back'))
           .width(24).height(24)
           .onClick(() => router.back())
 

@@ -51,7 +51,7 @@ export struct StatsView {
     Scroll() {
       Column() {
         // ---------------------------------------------------------
-        // 1. 顶部标题区域 (高级感优化)
+        // 1. 顶部标题区域
         // ---------------------------------------------------------
         Row() {
           Column() {
@@ -84,7 +84,7 @@ export struct StatsView {
         } else if (this.statsData && this.statsData.scores.length > 0) {
 
           // ---------------------------------------------------------
-          // 2. 日历视图 (日记打卡情况)
+          // 2. 日历视图
           // ---------------------------------------------------------
           Column() {
             // 卡片标题
@@ -145,7 +145,7 @@ export struct StatsView {
               .textAlign(TextAlign.Start)
           }
           .width('92%')
-          .backgroundColor('#FFFFFF') // 或者使用微淡的蓝色 #F0F8FF 突出 AI 感
+          .backgroundColor('#FFFFFF')
           .padding(20)
           .borderRadius(16)
           .shadow({ radius: 10, color: 'rgba(0,0,0,0.04)', offsetY: 4 })
@@ -250,7 +250,7 @@ export struct StatsView {
     const points: Array<[number, number]> = [];
     const chartHeight = 200;
     // 动态计算宽度，减去左侧文字边距
-    // 注意：这里的宽度计算只是近似值，在 Polyline 中相对坐标比较重要
+    // 这里的宽度计算只是近似值，在 Polyline 中相对坐标比较重要
     const chartWidth = 300;
 
     // 如果只有一个点，放在中间

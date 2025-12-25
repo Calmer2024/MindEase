@@ -182,7 +182,6 @@ struct DiaryDetailPage {
           .translate({ y: this.isPageLoaded ? 0 : 100 })
           .opacity(this.isPageLoaded ? 1 : 0)
           .animation({ duration: 600, curve: Curve.FastOutSlowIn })
-          // ✅ 修复报错：使用 constraintSize 设置最小高度
           .constraintSize({ minHeight: '100%' })
         }
         .width('100%')
