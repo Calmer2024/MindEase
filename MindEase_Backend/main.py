@@ -2,16 +2,17 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
-
-from database import engine, get_db, Base
+from database import engine, get_db
 import models
 import schemas
-from ai_service import analyze_diary_content
+# 👇 引入两个 AI 服务函数
+from ai_service import analyze_diary_content, generate_weekly_summary
 
-# 自动建表 (引用 models 里的类)
+# 自动建表
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
 
 @app.get("/")
 def read_root():
@@ -54,7 +55,7 @@ def login(user: schemas.UserAuth, db: Session = Depends(get_db)):
 # --- 写日记接口 ---
 @app.post("/diaries/", response_model=schemas.DiaryResponse)
 def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db)):
-    # 1. 调用 AI 服务 (一行代码搞定！)
+    # 1. 调用 AI 分析
     ai_result = analyze_diary_content(diary.content)
 
     # 2. 存入数据库
@@ -63,8 +64,8 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db)):
         content=diary.content,
         weather=diary.weather,
         mood_score=diary.mood_score,
-        ai_comment=ai_result.get("comment"),  # 获取 AI 结果
-        ai_mood=ai_result.get("mood")  # 获取 AI 结果
+        ai_comment=ai_result.get("comment"),
+        ai_mood=ai_result.get("mood")
     )
     db.add(db_diary)
     db.commit()
@@ -72,9 +73,44 @@ def create_diary(diary: schemas.DiaryCreate, db: Session = Depends(get_db)):
     return db_diary
 
 
-# --- 查日记接口 ---
+# --- 查日记列表接口 ---
 @app.get("/diaries/{user_id}", response_model=List[schemas.DiaryResponse])
 def get_diaries(user_id: int, db: Session = Depends(get_db)):
     diaries = db.query(models.DiaryDB).filter(models.DiaryDB.user_id == user_id).order_by(
         models.DiaryDB.created_at.desc()).all()
     return diaries
+
+
+# --- 获取统计分析接口 (Clean Version) ---
+@app.get("/stats/{user_id}", response_model=schemas.StatsResponse)  # 使用 schemas 里的定义
+def get_stats(user_id: int, db: Session = Depends(get_db)):
+    # 1. 查询数据库 (最近7条)
+    diaries = db.query(models.DiaryDB) \
+        .filter(models.DiaryDB.user_id == user_id) \
+        .order_by(models.DiaryDB.created_at.desc()) \
+        .limit(7) \
+        .all()
+
+    # 反转顺序，变成时间正序
+    diaries = diaries[::-1]
+
+    if not diaries:
+        return {
+            "dates": [],
+            "scores": [],
+            "weekly_summary": "还没有足够的日记数据来生成周报哦~"
+        }
+
+    # 2. 格式化数据
+    dates = [d.created_at.strftime("%m-%d") for d in diaries]
+    scores = [d.mood_score for d in diaries]
+    contents = [d.content for d in diaries]
+
+    # 3. 调用 AI 服务生成周报 (逻辑已经移到 ai_service.py 了)
+    weekly_summary = generate_weekly_summary(contents)
+
+    return {
+        "dates": dates,
+        "scores": scores,
+        "weekly_summary": weekly_summary
+    }

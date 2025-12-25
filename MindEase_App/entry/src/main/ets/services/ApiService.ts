@@ -4,6 +4,12 @@ import { Diary } from '../model/DiaryModel';
 
 const BASE_URL = 'http://10.138.164.39:8000';
 
+export interface StatsData {
+  dates: string[];
+  scores: number[];
+  weekly_summary: string;
+}
+
 class ApiService {
   // ✨ 新增：全局变量，存储当前登录的用户ID
   // 默认是 0 (未登录)，登录成功后会变成真实ID
@@ -101,6 +107,26 @@ class ApiService {
       console.error('Get Diaries Error:', JSON.stringify(err));
     }
     return [];
+  }
+  // --- 5. 获取统计数据 ---
+  async getStats(): Promise<StatsData | null> {
+    if (this.currentUserId === 0) return null;
+
+    const httpRequest = http.createHttp();
+    try {
+      const response = await httpRequest.request(`${BASE_URL}/stats/${this.currentUserId}`, {
+        method: http.RequestMethod.GET,
+        expectDataType: http.HttpDataType.STRING,
+        readTimeout: 30000 // AI 生成周报可能比较慢，多给点时间
+      });
+
+      if (response.responseCode === 200) {
+        return JSON.parse(response.result as string) as StatsData;
+      }
+    } catch (err) {
+      console.error('Get Stats Error:', JSON.stringify(err));
+    }
+    return null;
   }
 }
 

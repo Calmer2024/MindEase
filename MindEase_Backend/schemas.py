@@ -2,6 +2,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from typing import List
 
 # --- 日记相关 ---
 class DiaryCreate(BaseModel):
@@ -24,3 +25,8 @@ class UserAuth(BaseModel):
     username: str
     password: str
     nickname: Optional[str] = "新用户"
+
+class StatsResponse(BaseModel):
+    dates: List[str]      # 日期列表
+    scores: List[int]     # 分数列表
+    weekly_summary: str   # AI 周报

@@ -1,19 +1,19 @@
-import { WriteView } from '../view/WriteView';   // 引入写日记页面
-import { HistoryView } from '../view/HistoryView'; // 引入历史页面
+import { WriteView } from '../view/WriteView';
+import { HistoryView } from '../view/HistoryView';
+import { StatsView } from '../view/StatsView';
 
 @Entry
 @Component
 struct Index {
-  @State currentIndex: number = 0; // 当前选中的 Tab 索引
+  @State currentIndex: number = 0;
   private controller: TabsController = new TabsController();
 
+  // 信号变量
   @State historyReloader: number = 0;
 
-  // 自定义 Tab 样式函数
   @Builder TabBuilder(title: string, targetIndex: number, selectedImg: ResourceStr, normalImg: ResourceStr) {
     Column() {
-      // 简单的图标+文字 (你可以换成你自己的图片，或者直接用 Emoji 代替)
-      Text(targetIndex === 0 ? '📝' : '📂')
+      Text(targetIndex === 0 ? '📝' : (targetIndex === 1 ? '📂' : '📊'))
         .fontSize(24)
         .margin({ bottom: 4 })
       Text(title)
@@ -34,23 +34,31 @@ struct Index {
 
       // Tab 1: 写日记
       TabContent() {
-        WriteView() // 调用我们刚才拆分出来的组件
+        WriteView()
       }
       .tabBar(this.TabBuilder('写日记', 0, '', ''))
 
       // Tab 2: 历史记录
       TabContent() {
-        HistoryView({ refreshTrigger: this.historyReloader }) // 调用历史列表组件
+        HistoryView({ refreshTrigger: this.historyReloader })
       }
       .tabBar(this.TabBuilder('历史', 1, '', ''))
+
+      // Tab 3: 统计分析
+      TabContent() {
+        // 只要 StatsView.ets 编译通过，这里的报错就会消失
+        StatsView({ refreshTrigger: this.historyReloader })
+      }
+      .tabBar(this.TabBuilder('分析', 2, '', ''))
 
     }
     .onChange((index: number) => {
       this.currentIndex = index;
-      if (index === 1) {
-        this.historyReloader++; // 数字变了，HistoryView 就会收到通知并刷新
+      // 切到历史或分析页时，都触发刷新
+      if (index === 1 || index === 2) {
+        this.historyReloader++;
       }
     })
-    .scrollable(false) // 禁止左右滑动切换 (防止误触)
+    .scrollable(false)
   }
 }
