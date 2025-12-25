@@ -1,7 +1,7 @@
 # models.py
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime,Boolean
 from datetime import datetime
-from database import Base  # 👈 从刚才的文件引入
+from database import Base
 
 class UserDB(Base):
     __tablename__ = "users"
@@ -22,3 +22,5 @@ class DiaryDB(Base):
     ai_comment = Column(Text, nullable=True)
     ai_mood = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
+    is_deleted = Column(Boolean, default=False)  # 标记是否在回收站
+    deleted_at = Column(DateTime, nullable=True)  # 什么时候删的

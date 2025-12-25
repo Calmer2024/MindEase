@@ -1,15 +1,15 @@
-// 定义日记的数据结构（对应后端的 JSON）
 export interface Diary {
   id: number;
   content: string;
-  category: string;    // 分类标签
+  category: string;
   title?: string;
   mood_score: number;
-  ai_comment?: string; // 可能为空
+  ai_comment?: string;
   created_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string;
 }
 
-// 定义发送给后端的结构
 export interface DiaryPost {
   user_id: number;
   content: string;

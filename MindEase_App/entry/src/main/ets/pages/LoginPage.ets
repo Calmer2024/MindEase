@@ -1,109 +1,161 @@
 import router from '@ohos.router';
-import promptAction from '@ohos.promptAction';
 import { apiService } from '../services/ApiService';
+import promptAction from '@ohos.promptAction';
 
 @Entry
 @Component
 struct LoginPage {
+  @State isLogin: boolean = true; // true=登录模式, false=注册模式
   @State username: string = '';
   @State password: string = '';
+  @State nickname: string = '';
   @State isLoading: boolean = false;
 
   build() {
-    Column() {
-      // Logo 或 标题
-      Text('MindEase')
-        .fontSize(40)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#007DFF')
-        .margin({ top: 100, bottom: 10 })
+    Stack() {
+      // 背景图或背景色
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#F7F8FA')
 
-      Text('懂你的 AI 情绪日记')
-        .fontSize(16)
-        .fontColor('#999')
-        .margin({ bottom: 50 })
+      Column() {
+        // 1. Logo / 标题区域
+        Column() {
+          Image($r('app.media.app_icon'))
+            .width(80)
+            .height(80)
+            .borderRadius(20)
+            .margin({ bottom: 20 })
+            .shadow({ radius: 20, color: 'rgba(0,125,255,0.2)' })
 
-      // 账号输入框
-      TextInput({ placeholder: '请输入账号' })
-        .width('85%')
-        .height(50)
-        .backgroundColor('#F5F5F5')
-        .borderRadius(8)
-        .margin({ bottom: 20 })
-        .onChange((value: string) => { this.username = value; })
+          Text('MindEase')
+            .fontSize(30)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333')
 
-      // 密码输入框
-      TextInput({ placeholder: '请输入密码' })
-        .width('85%')
-        .height(50)
-        .backgroundColor('#F5F5F5')
-        .borderRadius(8)
-        .type(InputType.Password) // 密码模式
-        .margin({ bottom: 40 })
-        .onChange((value: string) => { this.password = value; })
+          Text(this.isLogin ? '欢迎回到心灵森林' : '创建你的专属树洞')
+            .fontSize(14)
+            .fontColor('#999')
+            .margin({ top: 8 })
+        }
+        .margin({ top: 80, bottom: 50 })
 
-      // 登录按钮
-      Button(this.isLoading ? '登录中...' : '登 录')
-        .width('85%')
-        .height(50)
-        .fontSize(18)
-        .backgroundColor('#007DFF')
-        .enabled(!this.isLoading)
-        .onClick(async () => {
-          await this.handleLogin();
-        })
+        // 2. 输入表单卡片
+        Column({ space: 15 }) {
 
-      // 注册入口
-      Row() {
-        Text('还没有账号？ ').fontColor('#999').fontSize(14)
-        Text('立即注册')
-          .fontColor('#007DFF')
-          .fontSize(14)
-          .fontWeight(FontWeight.Bold)
-          .onClick(async () => {
-            await this.handleRegister();
-          })
+          if (!this.isLogin) {
+            TextInput({ placeholder: '昵称' })
+              .height(50)
+              .backgroundColor('#F5F7F9')
+              .borderRadius(12)
+              .onChange((value: string) => {
+                this.nickname = value;
+              })
+              .animation({ duration: 300 }) // 添加显示动画
+          }
+
+          // 账号输入框
+          TextInput({ placeholder: '账号 / 用户名' })
+            .height(50)
+            .backgroundColor('#F5F7F9')
+            .borderRadius(12)
+            .onChange((value: string) => {
+              this.username = value;
+            })
+
+          // 密码输入框
+          TextInput({ placeholder: '密码' })
+            .type(InputType.Password)
+            .height(50)
+            .backgroundColor('#F5F7F9')
+            .borderRadius(12)
+            .onChange((value: string) => {
+              this.password = value;
+            })
+
+          // 3. 登录/注册 按钮
+          Button(this.isLoading ? '处理中...' : (this.isLogin ? '登 录' : '立即注册'))
+            .width('100%')
+            .height(50)
+            .backgroundColor('#007DFF')
+            .margin({ top: 20 })
+            .shadow({ radius: 10, color: 'rgba(0,125,255,0.3)', offsetY: 5 })
+            .onClick(async () => {
+              await this.handleAction();
+            })
+            .enabled(!this.isLoading)
+
+          // 4. 切换模式文字
+          Row() {
+            Text(this.isLogin ? '还没有账号？' : '已有账号？')
+              .fontColor('#999')
+              .fontSize(14)
+            Text(this.isLogin ? '去注册' : '去登录')
+              .fontColor('#007DFF')
+              .fontSize(14)
+              .fontWeight(FontWeight.Bold)
+              .onClick(() => {
+                animateTo({ duration: 300 }, () => {
+                  this.isLogin = !this.isLogin;
+                })
+              })
+          }
+          .margin({ top: 20 })
+          .justifyContent(FlexAlign.Center)
+          .width('100%')
+
+        }
+        .width('90%')
+        .padding(25)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(24)
+        .shadow({ radius: 30, color: 'rgba(0,0,0,0.05)' })
+
       }
-      .margin({ top: 20 })
-    }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#FFFFFF')
-  }
-
-  // 处理登录
-  async handleLogin() {
-    if (this.username === '' || this.password === '') {
-      promptAction.showToast({ message: '账号密码不能为空' });
-      return;
-    }
-    this.isLoading = true;
-    const success = await apiService.login(this.username, this.password);
-    this.isLoading = false;
-
-    if (success) {
-      promptAction.showToast({ message: '登录成功！' });
-      // ✨ 跳转到主页 (Index)
-      router.replaceUrl({ url: 'pages/Index' });
-    } else {
-      promptAction.showToast({ message: '登录失败，请检查账号密码' });
+      .width('100%')
+      .height('100%')
     }
   }
 
-  // 处理注册 (为了简单，直接点击注册就调用注册接口)
-  async handleRegister() {
+  // 处理登录或注册逻辑
+  async handleAction() {
     if (this.username === '' || this.password === '') {
-      promptAction.showToast({ message: '请先输入要注册的账号和密码' });
+      promptAction.showToast({ message: '请输入账号和密码' });
       return;
     }
-    this.isLoading = true;
-    const success = await apiService.register(this.username, this.password);
-    this.isLoading = false;
 
-    if (success) {
-      promptAction.showToast({ message: '注册成功，请点击登录' });
-    } else {
-      promptAction.showToast({ message: '注册失败，账号可能已存在' });
+    // 如果是注册，还要检查昵称
+    if (!this.isLogin && this.nickname === '') {
+      promptAction.showToast({ message: '请输入昵称' });
+      return;
+    }
+
+    this.isLoading = true;
+
+    try {
+      if (this.isLogin) {
+        // --- 登录逻辑 ---
+        const success = await apiService.login(this.username, this.password);
+        if (success) {
+          promptAction.showToast({ message: '欢迎回来！' });
+          router.replaceUrl({ url: 'pages/Index' });
+        } else {
+          promptAction.showToast({ message: '登录失败，请检查账号密码' });
+        }
+      } else {
+        const success = await apiService.register(this.username, this.password, this.nickname);
+        if (success) {
+          promptAction.showToast({ message: '注册成功，请登录' });
+          this.isLogin = true; // 注册成功后切换回登录界面
+        } else {
+          promptAction.showToast({ message: '注册失败，用户名可能已存在' });
+        }
+      }
+    } catch (err) {
+      promptAction.showToast({ message: '网络请求错误' });
+    } finally {
+      this.isLoading = false;
     }
   }
 }

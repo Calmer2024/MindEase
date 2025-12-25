@@ -1,8 +1,8 @@
 import router from '@ohos.router';
 import { apiService } from '../services/ApiService';
 import { Diary } from '../model/DiaryModel';
+import promptAction from '@ohos.promptAction';
 
-// 定义分组结构
 interface DiaryGroup {
   category: string;
   items: Diary[];
@@ -23,8 +23,7 @@ export struct HistoryView {
     this.fetchData();
   }
 
-  // 模拟根据分类获取图标的逻辑
-  // 实际开发中请确保你在 resources/base/media 下有对应的 png 图片
+  // 获取分类图标
   getCategoryIcon(category: string): Resource {
     switch (category) {
       case '生活': return $r('app.media.ic_life');
@@ -32,7 +31,7 @@ export struct HistoryView {
       case '情感': return $r('app.media.ic_emotion');
       case '工作': return $r('app.media.ic_work');
       case '灵感': return $r('app.media.ic_think');
-      default: return $r('app.media.ic_default');
+      default: return $r('app.media.app_icon');
     }
   }
 
@@ -64,75 +63,119 @@ export struct HistoryView {
     })
   }
 
+  // 删除确认逻辑
+  async confirmDelete(item: Diary) {
+    AlertDialog.show({
+      title: '移入回收站',
+      message: '确定要删除这条日记吗？\n可以在回收站内找回。',
+      primaryButton: { value: '再想想', action: () => {} },
+      secondaryButton: {
+        value: '删除',
+        fontColor: '#FF4D4F',
+        action: async () => {
+          const success = await apiService.deleteDiary(item.id);
+          if (success) {
+            promptAction.showToast({ message: '已移入回收站' });
+            this.fetchData(); // 刷新列表
+          } else {
+            promptAction.showToast({ message: '删除失败' });
+          }
+        }
+      }
+    })
+  }
+
   build() {
     Column() {
-      // ---------------------------------------------------------
+      // ============================================
       // 1. 标题区域
-      // ---------------------------------------------------------
+      // ============================================
       Row() {
+        // 左侧：标题 + 副标题 + 回收站按钮
         Column() {
           Text('时光档案')
-            .fontSize(30) // 加大字号
+            .fontSize(30)
             .fontWeight(FontWeight.Bold)
             .fontColor('#1A1A1A')
             .margin({ bottom: 4 })
 
-          // 增加副标题或日期，提升层次感
           Text('记录每一个当下的自己')
             .fontSize(14)
             .fontColor('#999999')
-            .letterSpacing(1) // 增加字间距，显得更精致
+            .letterSpacing(1)
+            .margin({ bottom: 12 })
+
+          // 回收站按钮
+          Row() {
+            Image($r('app.media.ic_recycle_bin'))
+              .width(14)
+              .height(14)
+              .fillColor('#666')
+              .margin({ right: 4 })
+
+            Text('回收站')
+              .fontSize(12)
+              .fontColor('#666')
+              .fontWeight(FontWeight.Medium)
+          }
+          .padding({ left: 10, right: 10, top: 6, bottom: 6 })
+          .backgroundColor('#FFFFFF')
+          .borderRadius(14)
+          .shadow({ radius: 5, color: 'rgba(0,0,0,0.05)' })
+          .onClick(() => {
+            router.pushUrl({ url: 'pages/RecycleBinPage' });
+          })
         }
         .alignItems(HorizontalAlign.Start)
 
-        Blank() // 占位符，把左右撑开
+        Blank() // 撑开左右空间
 
-        // 右侧加一个装饰性的大图标或当前日期的日历图标
+        // 显示 bg_history 装饰图
         Image($r('app.media.bg_history'))
-          .width(40)
-          .height(40)
-          .borderRadius(12)
+          .width(60)  // 稍微调大一点，更有氛围
+          .height(60)
+          .objectFit(ImageFit.Contain)
+          .opacity(0.8) // 稍微透明一点，不抢视觉重心
       }
       .width('100%')
-      .padding({ top: 40, bottom: 20, left: 24, right: 24 }) // 增加左右边距
-      .backgroundColor(Color.Transparent) // 保持通透
+      .padding({ top: 40, bottom: 10, left: 24, right: 24 })
+      .alignItems(VerticalAlign.Top)
+      .backgroundColor(Color.Transparent)
 
+      // ============================================
+      // 2. 列表内容
+      // ============================================
       if (this.isLoading) {
         LoadingProgress().width(40).height(40).margin({ top: 100 })
       } else {
-        List({ space: 15 }) { // 减小一点间距，显得更紧凑
+        List({ space: 15 }) {
           ForEach(this.diaryGroups, (group: DiaryGroup, index: number) => {
             ListItemGroup({ header: this.GroupHeader(group, index) }) {
               ForEach(group.isExpanded ? group.items : group.items.slice(0, 2), (item: Diary) => {
                 ListItem() {
-                  this.DiaryCard(item) // 将卡片抽取为 Builder，代码更整洁
+                  this.DiaryCard(item)
                 }
-                .margin({ bottom: 12 }) // 调整卡片间距
+                .margin({ bottom: 12 })
               })
             }
           })
-
-          // 底部增加一点留白，防止最后一个元素紧贴屏幕底部
           ListItem().height(20)
         }
         .width('92%')
         .layoutWeight(1)
         .sticky(StickyStyle.None)
         .scrollBar(BarState.Off)
-        .edgeEffect(EdgeEffect.Spring) // 增加回弹效果，体验更好
+        .edgeEffect(EdgeEffect.Spring)
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F6F8') // 背景色稍微调灰一点点，提升质感
+    .backgroundColor('#F5F6F8')
   }
 
-  // ---------------------------------------------------------
-  // 2. 带图标的分组标题
-  // ---------------------------------------------------------
+  // 分组头部
   @Builder GroupHeader(group: DiaryGroup, index: number) {
     Row() {
-      // 左侧：图标 + 标题
       Row() {
         Image(this.getCategoryIcon(group.category))
           .width(20)
@@ -149,13 +192,12 @@ export struct HistoryView {
           .fontSize(14)
           .fontColor('#999')
           .margin({ left: 6 })
-          .alignSelf(ItemAlign.End) // 底部对齐，显得更协调
+          .alignSelf(ItemAlign.End)
           .padding({ bottom: 2 })
       }
 
-      // 右侧：折叠操作
       Row() {
-        Text(group.isExpanded ? '收起' : '更多') // 简化文案
+        Text(group.isExpanded ? '收起' : '更多')
           .fontSize(13)
           .fontColor('#007DFF')
           .margin({ right: 4 })
@@ -168,8 +210,8 @@ export struct HistoryView {
       }
     }
     .width('100%')
-    .padding({ top: 15, bottom: 10, left: 4, right: 4 }) // 调整内边距
-    .backgroundColor('#F5F6F8') // 与背景色一致，制造悬浮感
+    .padding({ top: 15, bottom: 10, left: 4, right: 4 })
+    .backgroundColor('#F5F6F8')
     .justifyContent(FlexAlign.SpaceBetween)
     .onClick(() => {
       animateTo({ duration: 300, curve: Curve.EaseInOut }, () => {
@@ -182,10 +224,10 @@ export struct HistoryView {
     })
   }
 
-  // 抽取卡片样式，保持主 build 函数干净
+  // 日记卡片
   @Builder DiaryCard(item: Diary) {
     Row() {
-      // 装饰条
+      // 蓝色装饰条
       Column()
         .width(4)
         .height(36)
@@ -193,6 +235,7 @@ export struct HistoryView {
         .borderRadius(2)
         .margin({ right: 14 })
 
+      // 中间文字区域
       Column() {
         Text(item.content)
           .fontSize(16)
@@ -226,23 +269,36 @@ export struct HistoryView {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
+      .onClick(() => {
+        router.pushUrl({
+          url: 'pages/DiaryDetailPage',
+          params: { diary: item }
+        });
+      })
 
-      // 箭头改为更轻的颜色
-      Image($r('app.media.ic_right'))
-        .width(16)
-        .height(16)
-        .fillColor('#DDD')
+      // 删除按钮区域
+      Row() {
+        Divider().vertical(true).height(20).color('#EEE').margin({ left: 10, right: 10 })
+
+        Image($r('app.media.ic_delete'))
+          .width(18)
+          .height(18)
+          .fillColor('#FF4D4F')
+          .onClick(() => {
+            this.confirmDelete(item);
+          })
+      }
     }
     .width('100%')
     .padding(16)
     .backgroundColor('#FFFFFF')
-    .borderRadius(16) // 更圆润的圆角
-    .shadow({ radius: 10, color: 'rgba(0,0,0,0.04)', offsetY: 4 }) // 更柔和的阴影
-    .onClick(() => {
-      router.pushUrl({
-        url: 'pages/DiaryDetailPage',
-        params: { diary: item }
-      });
-    })
+    .borderRadius(16)
+    .shadow({ radius: 10, color: 'rgba(0,0,0,0.04)', offsetY: 4 })
+    .gesture(
+      LongPressGesture({ repeat: false })
+        .onAction(() => {
+          this.confirmDelete(item);
+        })
+    )
   }
 }

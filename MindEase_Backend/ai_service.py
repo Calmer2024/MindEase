@@ -62,11 +62,11 @@ def analyze_diary_content(content: str) -> dict:
         ai_text = ai_text.replace("```json", "").replace("```", "").strip()
         result = json.loads(ai_text)
 
-        print(f"✅ DeepSeek 分析成功: {result.get('mood')} - {result.get('comment')}")
+        print(f"DeepSeek 分析成功: {result.get('mood')} - {result.get('comment')}")
         return result
 
     except Exception as e:
-        print(f"❌ DeepSeek 调用失败: {e}")
+        print(f"DeepSeek 调用失败: {e}")
         # 发生错误时的兜底返回
         return {
             "mood": "平静",
@@ -79,12 +79,11 @@ def generate_weekly_summary(contents: list) -> str:
     if not contents:
         return "记忆像是一口干枯的井，暂时没有什么可以打捞的。"
 
-    print("📊 正在呼叫 AI 生成村上式周报...")
+    print("正在呼叫 AI 生成村上式周报...")
 
     # 简单拼接日记内容
     summary_text = "; ".join([c[:50] for c in contents])
 
-    # 👇👇👇 修改周报的 Prompt 👇👇👇
     system_prompt = """
     你是一位在海边写信的作家，拥有村上春树的笔触。
     请阅读用户过去几天的日记碎片，用第二人称('你')写一段**不仅限于总结，更像是文学独白**的周报(100字以内)。
@@ -109,5 +108,5 @@ def generate_weekly_summary(contents: list) -> str:
         return response.choices[0].message.content
 
     except Exception as e:
-        print(f"❌ AI 周报生成失败: {e}")
+        print(f"AI 周报生成失败: {e}")
         return "风把信吹走了，信号暂时中断。"
